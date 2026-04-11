@@ -462,9 +462,9 @@ with tab_player:
         group_player_df = addplayergroup(selected_player_group, selected_team, selected_pos, selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta, threshhold)
         
         c = alt.Chart(group_player_df).mark_circle(size=50).encode(
-            x=alt.X(x_axis_choice, scale=alt.Scale(zero=False)),
-            y=alt.Y(y_axis_choice, scale=alt.Scale(zero=False)),
-            tooltip=['Player Name', x_axis_choice, y_axis_choice]
+            x=alt.X(f"{x_axis_choice}:Q", scale=alt.Scale(zero=False)),
+            y=alt.Y(f"{y_axis_choice}:Q", scale=alt.Scale(zero=False)),
+            tooltip=['Player Name:N', f"{x_axis_choice}:Q", f"{y_axis_choice}:Q"]
         ).interactive()
         
         st.altair_chart(c, use_container_width=True)
