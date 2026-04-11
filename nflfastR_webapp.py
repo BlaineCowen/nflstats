@@ -204,6 +204,8 @@ score_delta = list(score_delta)
 win_perc = st.sidebar.select_slider('Win Percentage', options=list(range(0,101)), value=[0, 100])
 win_perc = list(win_perc)
 
+#Sidebar - Redzone
+redzone_only = st.sidebar.checkbox('Redzone Only (Inside 20)', value=False)
 
 threshhold = st.sidebar.slider('Minimum Play Threshhold', min_value=1, max_value=200)
 
@@ -215,13 +217,15 @@ stat_columns = [ 'week', 'fantasy', 'posteam', 'posteam_type', 'defteam','yardli
                     	'receiving_yards', 	'rusher_player_name', 	'rushing_yards', 	'season', 	'cp', 	'cpoe', 	'stadium', 	'weather', 	'roof', 	'surface', 	'success', 	'qb_epa', ]
 
 @st.cache_data
-def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt):
+def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt, redzone_only=False):
     data = pd.DataFrame()
 
     for i in range(len(selected_player_group)):
         if selected_pos == ['Qb'] or selected_pos == ['Wr/Te']:
             i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
                 (playerstats['week'].isin(week)) & \
+                (~playerstats['yardline_100'].isna()) & \
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & \
                 (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & \
                 (playerstats['down'].isin(downs_selected)) & \
                 (playerstats['air_yards'] >= air_yards[0]) & (playerstats['air_yards'] <= air_yards[1]) &\
@@ -233,6 +237,8 @@ def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt):
         elif selected_pos == ['Rb']:
             i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
                 (playerstats['week'].isin(week)) & \
+                (~playerstats['yardline_100'].isna()) & \
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & \
                 (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & \
                 (playerstats['down'].isin(downs_selected)) &\
                 (playerstats['ydstogo'] >= togo[0]) & (playerstats['ydstogo'] <= togo[1]) &\
@@ -246,215 +252,54 @@ def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt):
 
 
 # st.write('Data Dimension: ' + str(df_all_filters.shape[0]) + ' rows and ' + str(df_all_filters.shape[1]) + ' columns.')
-if selected_player[0] not in ['All Qb', 'All Wr/Te', 'All Rb'] :
-    print('selected', selected_player[0])
-    if st.button('View Raw Data'):
-        raw_data = rawdataget(selected_player_group, selected_team, selected_pos\
-        , selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta)
-        st.dataframe(raw_data[stat_columns].sort_values('game_date'))
 
+tab_player, tab_team, tab_pbp = st.tabs(["Player Stats", "Team Stats", "Play-by-Play Explorer"])
 
-stat_totals = pd.DataFrame()
+with tab_pbp:
+    st.header("Play-by-Play Explorer")
+    if selected_player[0] not in ['All Qb', 'All Wr/Te', 'All Rb'] :
+        st.write('Selected player:', selected_player[0])
+        if st.button('View Raw Data'):
+            raw_data = rawdataget(selected_player_group, selected_team, selected_pos, selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta)
+            st.dataframe(raw_data[stat_columns].sort_values('game_date'))
 
-@st.cache_data
-def addplayergroup(players, team, pos, week, wp, downs, airyards, togo,
- scoredelt, threshhold):
-    data = pd.DataFrame()
-    for i in range(len(selected_player_group)):
-        print(selected_player_group[i])
-        if selected_pos == ['Qb'] or selected_pos == ['Wr/Te']:
-            i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
-                (playerstats['week'].isin(week)) & \
-                (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & \
-                (playerstats['down'].isin(downs_selected)) & \
-                (playerstats['air_yards'] >= air_yards[0]) & (playerstats['air_yards'] <= air_yards[1]) &\
-                (playerstats['ydstogo'] >= togo[0]) & (playerstats['ydstogo'] <= togo[1]) &\
-                (playerstats['score_differential'] >= scoredelt[0]) & (playerstats['score_differential'] <= scoredelt[1]) &\
-                (playerstats['passer_player_id'].isin([selected_player_group[i]]) | \
-                playerstats['rusher_player_id'].isin([selected_player_group[i]]) | playerstats['receiver_player_id'].isin([selected_player_group[i]]))]
+with tab_team:
+    st.header("Team Stats")
+    st.write("Team stats functionality coming soon.")
 
-        elif selected_pos == ['Rb']:
-            i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
-                (playerstats['week'].isin(week)) & \
-                (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & \
-                (playerstats['down'].isin(downs_selected)) &\
-                (playerstats['ydstogo'] >= togo[0]) & (playerstats['ydstogo'] <= togo[1]) &\
-                (playerstats['score_differential'] >= scoredelt[0]) & (playerstats['score_differential'] <= scoredelt[1]) &\
-                (playerstats['passer_player_id'].isin([selected_player_group[i]]) | \
-                playerstats['rusher_player_id'].isin([selected_player_group[i]]) | playerstats['receiver_player_id'].isin([selected_player_group[i]]))]
-
-        if i_all_filters['play_id'].count() < threshhold:
-            i_data = pd.DataFrame()
-            group_player_data = data
-
-        else:
-            
-            netyards = i_all_filters['yards_gained'].sum()
-            rushyards = i_all_filters['rushing_yards'].sum()
-            playcnt = i_all_filters['week'].count()
-            rushes = i_all_filters['rushing_yards'].count()
-            epa_mean = i_all_filters['epa'].mean()
-
-            if selected_pos == ['Qb']:
-                player_name = i_all_filters['passer_player_name'].mode()
-                player_name = str(player_name[0])
-                passyards = i_all_filters['passing_yards'].sum()
-                passes = i_all_filters['air_yards'].count()
-                completions = i_all_filters['passing_yards'].count()
-                if passes != 0:
-                    ypa = (passyards / passes)
-                    comp_perc = (completions / passes)
-                else:
-                    ypa = 0
-                    comp_perc = 0
-                cpoe = i_all_filters['cpoe'].mean()
-                ypcatch = 'na'
-                recyards = 'na'
-                ypt = 'na'
-                trgts = 'na'
-                receptions = 'na'
-
-            elif selected_pos == ['Rb']:
-                player_name = i_all_filters['rusher_player_name'].mode()
-                player_name = str(player_name[0])
-                passyards = 'na'
-                passes = 'na'
-                completions = 'na'
-                ypa = 'na'      
-                recyards = i_all_filters['receiving_yards'].sum()
-                trgts = i_all_filters['air_yards'].count()
-                receptions = i_all_filters['receiving_yards'].count() 
-                if trgts != 0:
-                    ypt = (recyards / trgts)
-                else:
-                    ypt = 0
-                if receptions != 0:
-                    ypcatch = (recyards / receptions)
-                else:
-                    ypcatch = 0
-                comp_perc = 'na'
-                cpoe = 'na'  
-
-            elif selected_pos == ['Wr/Te']:
-                player_name = i_all_filters['receiver_player_name'].mode()
-                player_name = str(player_name[0])
-                passyards = 'na'
-                passes = 'na'
-                completions = 'na'
-                ypa = 'na'      
-                recyards = i_all_filters['receiving_yards'].sum()
-                trgts = i_all_filters['air_yards'].count()
-                receptions = i_all_filters['receiving_yards'].count() 
-                if trgts != 0:
-                    ypt = (recyards / trgts)
-                else:
-                    ypt = 0
-                if receptions != 0:
-                    ypcatch = (recyards / receptions)
-                else:
-                    ypcatch = 0
-                comp_perc = 'na'
-                cpoe = 'na'                    
-
-            rushes = i_all_filters['rushing_yards'].count()
-            ypplay = (netyards / playcnt)
-            if rushes != 0:
-                ypc = (rushyards / rushes)
-            elif rushes == 0:
-                ypc = 0
-                
-            netepa = i_all_filters['epa'].sum()
-            success_perc = ((i_all_filters['success'].sum()) / (i_all_filters['epa'].count()))     
-                
-                
-            i_data = pd.DataFrame({'Player Name': [player_name], 'EPA avg': [epa_mean],
-            'Net Yards': [netyards], 'Pass Yards': [passyards], 'Rush Yards': [rushyards], 'Receiving yards': [recyards], 
-            'Pass atmps': [passes], 'Rush atmps': [rushes], 'Targets': [trgts], 'Receptions': [receptions],
-            'Yards/Play': [ypplay], 'yards/pass': [ypa], 'yards/rush': [ypc], 'yards/catch': [ypcatch],
-            'yards/target': [ypt], 'Net EPA': [netepa], 'Success %': [success_perc], 'Comp %': [comp_perc], 'CPOE': [cpoe]})
-
-            data = data.append(i_data, ignore_index=True)
-            group_player_data = data
-
-    return group_player_data
-
-
-
-
-if st.button('Create Stat Chart'):
-    group_player_df = addplayergroup(selected_player_group, selected_team, selected_pos\
-        , selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta, threshhold)
-    st.dataframe(group_player_df)
-
-    raw_data = rawdataget(selected_player_group, selected_team, selected_pos\
-        , selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta)
+with tab_player:
+    st.header("Player Stats")
     
-    st.write('Found data from ' + str(raw_data.shape[0]) + 
-    ' Plays and ' + str(group_player_df.shape[0]) + ' players')
+    if st.button('Create Stat Chart'):
+        group_player_df = addplayergroup(selected_player_group, selected_team, selected_pos, selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta, threshhold)
+        
+        if not group_player_df.empty and len(group_player_df) == 1:
+            row = group_player_df.iloc[0]
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Net Yards", row['Net Yards'])
+            col2.metric("EPA Avg", round(row['EPA avg'], 2) if isinstance(row['EPA avg'], (int, float)) else row['EPA avg'])
+            col3.metric("Success %", f"{round(row['Success %']*100, 1)}%" if isinstance(row['Success %'], (int, float)) else row['Success %'])
+            col4.metric("Net EPA", round(row['Net EPA'], 2) if isinstance(row['Net EPA'], (int, float)) else row['Net EPA'])
 
-
-
-if 'a' not in st.session_state:
-    st.session_state.a = 0
-
-# add_player_button = st.button('Create Player Totals Chart')
-# if add_player_button:
-#     session_state.a = addplayer(selected_player)
-#     st.dataframe(session_state.a)
-
-# if st.button('Add current player to new row'):
-#     new_data = addplayer(selected_player)
-#     session_state.a = session_state.a.append(new_data)
-#     st.dataframe(session_state.a)
-
-if st.button('Clear data'):
-    st.session_state.a = 0
+        st.dataframe(group_player_df)
     
+        raw_data = rawdataget(selected_player_group, selected_team, selected_pos, selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta)
+        st.write('Found data from ' + str(raw_data.shape[0]) + ' Plays and ' + str(group_player_df.shape[0]) + ' players')
 
-x_axis_choice = st.selectbox('X Axis choice', ['EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards',
-'Receiving yards', 'Pass atmps', 'Rush atmps', 'Targets', 'Receptions', 
-'Yards/Play', 'yards/pass', 'yards/rush', 'yards/catch',
-'yards/target', 'Net EPA', 'Success %', 'Comp %', 'CPOE'], index=1)
-
-y_axis_choice = st.selectbox('Y Axis choice', ['EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards',
-'Receiving yards', 'Pass atmps', 'Rush atmps', 'Targets', 'Receptions', 
-'Yards/Play', 'yards/pass', 'yards/rush', 'yards/catch',
-'yards/target', 'Net EPA', 'Success %', 'Comp %', 'CPOE'], index=9)
-
-# future feature add color gradient
-# color = st.selectbox('Color Gradient', ['None', 'EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards',
-# 'Receiving yards', 'Pass atmps', 'Rush atmps', 'Targets', 'Receptions', 
-# 'Yards/Play', 'yards/pass', 'yards/rush', 'yards/catch',
-# 'yards/target', 'Net EPA', 'Success %', 'Comp %', 'CPOE'], index=0)
-
-
-if st.button('Draw Graph'):
+    st.subheader("Visualizations")
+    colA, colB = st.columns(2)
+    with colA:
+        x_axis_choice = st.selectbox('X Axis choice', ['EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards', 'Receiving yards', 'Pass atmps', 'Rush atmps', 'Targets', 'Receptions', 'Yards/Play', 'yards/pass', 'yards/rush', 'yards/catch', 'yards/target', 'Net EPA', 'Success %', 'Comp %', 'CPOE'], index=1)
+    with colB:
+        y_axis_choice = st.selectbox('Y Axis choice', ['EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards', 'Receiving yards', 'Pass atmps', 'Rush atmps', 'Targets', 'Receptions', 'Yards/Play', 'yards/pass', 'yards/rush', 'yards/catch', 'yards/target', 'Net EPA', 'Success %', 'Comp %', 'CPOE'], index=9)
     
-    group_player_df = addplayergroup(selected_player_group, selected_team, selected_pos\
-        , selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta, threshhold)
-    st.dataframe(group_player_df)
-
-    names = group_player_df['Player Name']
-
-    
-    c = alt.Chart(group_player_df).mark_circle(size=50).encode(
-        alt.X(x_axis_choice,
-            scale=alt.Scale(
-                clamp=True,
-            )
-        ),
-        y=y_axis_choice, tooltip='Player Name').interactive()
-
-
-    st.altair_chart(c.properties(width=700, height=400))
-
-
-
-
-
-
-
-
-
-    
-    
+    if st.button('Draw Graph'):
+        group_player_df = addplayergroup(selected_player_group, selected_team, selected_pos, selected_week, win_perc, downs_selected, air_yards, togo_yards, score_delta, threshhold)
+        
+        c = alt.Chart(group_player_df).mark_circle(size=50).encode(
+            x=alt.X(x_axis_choice, scale=alt.Scale(zero=False)),
+            y=alt.Y(y_axis_choice, scale=alt.Scale(zero=False)),
+            tooltip=['Player Name', x_axis_choice, y_axis_choice]
+        ).interactive()
+        
+        st.altair_chart(c, use_container_width=True)
