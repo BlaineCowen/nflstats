@@ -27,14 +27,14 @@ st.sidebar.header('User Input Features')
 selected_year = st.sidebar.multiselect('Year', list(reversed(range(1990,2024))), default=2023)
 
 # get data for year(s)
-@st.cache
+@st.cache_data
 def load_data(year):
     data = pd.DataFrame()
-    for i in selected_year:
-        i_data = pd.read_csv('https://github.com/guga31bb/nflfastR-data/blob/master/data/' \
-            'play_by_play_' + str(i) + '.csv.gz?raw=True', 
+    for i in year:
+        i_data = pd.read_csv('https://github.com/nflverse/nflverse-data/releases/download/pbp/' \
+            'play_by_play_' + str(i) + '.csv.gz', 
             compression='gzip', low_memory=False)
-        data = data.append(i_data, sort=True)
+        data = pd.concat([data, i_data], sort=True)
         playerstats = data
     
     return playerstats
@@ -42,7 +42,7 @@ def load_data(year):
 playerstats = load_data(selected_year)
 
 #Get Player List
-@st.cache
+@st.cache_data
 def load_players():
     player_csv = pd.read_csv('https://github.com/guga31bb/nflfastR-data/blob/master/data/player_stats.csv.gz?raw=True', 
             compression='gzip', low_memory=False)
@@ -126,7 +126,7 @@ elif selected_pos == ['Wr/Te']:
 else: 
     select_player_list = player_list
 
-@st.cache
+@st.cache_data
 def getplayerids(selected_player, pos, csv):
     if selected_pos == ['Qb']:
         player_id = passer_list[passer_list['player_name'].isin(selected_player)].iloc[0]
@@ -217,7 +217,7 @@ stat_columns = [ 'week', 'fantasy', 'posteam', 'posteam_type', 'defteam','yardli
             	'run_gap', 	'posteam_score', 	'defteam_score', 	'score_differential', 	'epa', 	'wp', 	'passer_player_name', 	'passing_yards', 	'receiver_player_name', \
                     	'receiving_yards', 	'rusher_player_name', 	'rushing_yards', 	'season', 	'cp', 	'cpoe', 	'stadium', 	'weather', 	'roof', 	'surface', 	'success', 	'qb_epa', ]
 
-@st.cache
+@st.cache_data
 def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt):
     data = pd.DataFrame()
 
@@ -259,7 +259,7 @@ if selected_player[0] not in ['All Qb', 'All Wr/Te', 'All Rb'] :
 
 stat_totals = pd.DataFrame()
 
-@st.cache
+@st.cache_data
 def addplayergroup(players, team, pos, week, wp, downs, airyards, togo,
  scoredelt, threshhold):
     data = pd.DataFrame()
