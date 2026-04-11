@@ -24,7 +24,7 @@ Add a page for team data
 st.sidebar.header('User Input Features')
 
 #Sidebar-Select Year
-selected_year = st.sidebar.multiselect('Year', list(reversed(range(1990,2021))), default=2020)
+selected_year = st.sidebar.multiselect('Year', list(reversed(range(1990,2024))), default=2023)
 
 # get data for year(s)
 @st.cache
