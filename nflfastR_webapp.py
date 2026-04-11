@@ -17,7 +17,7 @@ filter by for weather
 Add a page for team data 
 *compare totals for selected players
 * **Python libraries:** base64, pandas, streamlit, numpy, matplotlib, seaborn
-* **Data source:** [NFLfastR](https://github.com/guga31bb/nflfastR-data/).
+* **Data source:** [NFLverse](https://github.com/nflverse/nflverse-data).
 """)
 
 #Sidebar
@@ -44,7 +44,7 @@ playerstats = load_data(selected_year)
 #Get Player List
 @st.cache_data
 def load_players():
-    player_csv = pd.read_csv('https://github.com/guga31bb/nflfastR-data/blob/master/data/player_stats.csv.gz?raw=True', 
+    player_csv = pd.read_csv('https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats.csv.gz', 
             compression='gzip', low_memory=False)
     player_list = player_csv
 
