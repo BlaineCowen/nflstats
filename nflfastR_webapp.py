@@ -30,9 +30,8 @@ selected_year = st.sidebar.multiselect('Year', list(reversed(range(1990,2024))),
 def load_data(year):
     data = pd.DataFrame()
     for i in year:
-        i_data = pd.read_csv('https://github.com/nflverse/nflverse-data/releases/download/pbp/' \
-            'play_by_play_' + str(i) + '.csv.gz', 
-            compression='gzip', low_memory=False)
+        i_data = pd.read_parquet('https://github.com/nflverse/nflverse-data/releases/download/pbp/' \
+            'play_by_play_' + str(i) + '.parquet', engine='pyarrow')
         data = pd.concat([data, i_data], sort=True)
         playerstats = data
     
@@ -43,8 +42,7 @@ playerstats = load_data(selected_year)
 #Get Player List
 @st.cache_data
 def load_players():
-    player_csv = pd.read_csv('https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats.csv.gz', 
-            compression='gzip', low_memory=False)
+    player_csv = pd.read_parquet('https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats.parquet', engine='pyarrow')
     player_list = player_csv
 
     return player_list
