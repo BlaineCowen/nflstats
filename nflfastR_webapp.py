@@ -265,7 +265,59 @@ with tab_pbp:
 
 with tab_team:
     st.header("Team Stats")
-    st.write("Team stats functionality coming soon.")
+    st.write("Compare Offensive vs Defensive EPA for selected teams.")
+    
+    if st.button("Calculate Team EPA"):
+        # We need to compute team offensive EPA (posteam = team) and defensive EPA (defteam = team)
+        team_epa_list = []
+        for team in selected_team:
+            if team == 'All Teams': continue
+            
+            # Offense
+            off_plays = playerstats[
+                (playerstats['posteam'] == team) & 
+                (playerstats['week'].isin(selected_week)) &
+                (~playerstats['yardline_100'].isna()) & 
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & 
+                (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & 
+                (playerstats['down'].isin(downs_selected)) &
+                (playerstats['ydstogo'] >= togo_yards[0]) & (playerstats['ydstogo'] <= togo_yards[1]) &
+                (playerstats['score_differential'] >= score_delta[0]) & (playerstats['score_differential'] <= score_delta[1])
+            ]
+            
+            # Defense
+            def_plays = playerstats[
+                (playerstats['defteam'] == team) & 
+                (playerstats['week'].isin(selected_week)) &
+                (~playerstats['yardline_100'].isna()) & 
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & 
+                (playerstats['wp'] >= win_perc[0]) & (playerstats['wp'] <= win_perc[1]) & 
+                (playerstats['down'].isin(downs_selected)) &
+                (playerstats['ydstogo'] >= togo_yards[0]) & (playerstats['ydstogo'] <= togo_yards[1]) &
+                (playerstats['score_differential'] >= score_delta[0]) & (playerstats['score_differential'] <= score_delta[1])
+            ]
+            
+            off_epa = off_plays['epa'].mean()
+            def_epa = def_plays['epa'].mean() # Note: For defense, negative EPA is good
+            
+            team_epa_list.append({
+                'Team': team,
+                'Offensive EPA/play': off_epa,
+                'Defensive EPA/play': def_epa,
+                'Net EPA/play': off_epa - def_epa if off_epa is not None and def_epa is not None else None
+            })
+            
+        if team_epa_list:
+            team_epa_df = pd.DataFrame(team_epa_list)
+            st.dataframe(team_epa_df)
+            
+            chart = alt.Chart(team_epa_df).mark_circle(size=100).encode(
+                x=alt.X('Offensive EPA/play', title='Offensive EPA/Play'),
+                y=alt.Y('Defensive EPA/play', title='Defensive EPA/Play (Lower is better)', scale=alt.Scale(reverse=True)),
+                tooltip=['Team', 'Offensive EPA/play', 'Defensive EPA/play', 'Net EPA/play']
+            ).interactive()
+            
+            st.altair_chart(chart, use_container_width=True)
 
 with tab_player:
     st.header("Player Stats")
