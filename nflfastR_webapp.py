@@ -4,7 +4,6 @@ import base64
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-import SessionState
 import altair as alt
 
 # Title Text
@@ -397,7 +396,8 @@ if st.button('Create Stat Chart'):
 
 
 
-session_state = SessionState.get(a=0)
+if 'a' not in st.session_state:
+    st.session_state.a = 0
 
 # add_player_button = st.button('Create Player Totals Chart')
 # if add_player_button:
@@ -410,7 +410,7 @@ session_state = SessionState.get(a=0)
 #     st.dataframe(session_state.a)
 
 if st.button('Clear data'):
-    session_state.a = 0
+    st.session_state.a = 0
     
 
 x_axis_choice = st.selectbox('X Axis choice', ['EPA avg', 'Net Yards', 'Pass Yards', 'Rush Yards',
