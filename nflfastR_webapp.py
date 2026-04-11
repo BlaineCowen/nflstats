@@ -217,6 +217,119 @@ stat_columns = [ 'week', 'fantasy', 'posteam', 'posteam_type', 'defteam','yardli
                     	'receiving_yards', 	'rusher_player_name', 	'rushing_yards', 	'season', 	'cp', 	'cpoe', 	'stadium', 	'weather', 	'roof', 	'surface', 	'success', 	'qb_epa', ]
 
 @st.cache_data
+
+@st.cache_data
+def addplayergroup(players, team, pos, week, wp, downs, airyards, togo, scoredelt, threshhold, redzone_only=False):
+    data = pd.DataFrame()
+    for i in range(len(players)):
+        if pos == ['Qb'] or pos == ['Wr/Te']:
+            i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
+                (playerstats['week'].isin(week)) & \
+                (~playerstats['yardline_100'].isna()) & \
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & \
+                (playerstats['wp'] >= wp[0]) & (playerstats['wp'] <= wp[1]) & \
+                (playerstats['down'].isin(downs)) & \
+                (playerstats['air_yards'] >= airyards[0]) & (playerstats['air_yards'] <= airyards[1]) &\
+                (playerstats['ydstogo'] >= togo[0]) & (playerstats['ydstogo'] <= togo[1]) &\
+                (playerstats['score_differential'] >= scoredelt[0]) & (playerstats['score_differential'] <= scoredelt[1]) &\
+                (playerstats['passer_player_id'].isin([players[i]]) | \
+                playerstats['rusher_player_id'].isin([players[i]]) | playerstats['receiver_player_id'].isin([players[i]]))]
+
+        elif pos == ['Rb']:
+            i_all_filters = playerstats[(playerstats['posteam'].isin(team)) & \
+                (playerstats['week'].isin(week)) & \
+                (~playerstats['yardline_100'].isna()) & \
+                (playerstats['yardline_100'] <= 20 if redzone_only else playerstats['yardline_100'] <= 100) & \
+                (playerstats['wp'] >= wp[0]) & (playerstats['wp'] <= wp[1]) & \
+                (playerstats['down'].isin(downs)) &\
+                (playerstats['ydstogo'] >= togo[0]) & (playerstats['ydstogo'] <= togo[1]) &\
+                (playerstats['score_differential'] >= scoredelt[0]) & (playerstats['score_differential'] <= scoredelt[1]) &\
+                (playerstats['passer_player_id'].isin([players[i]]) | \
+                playerstats['rusher_player_id'].isin([players[i]]) | playerstats['receiver_player_id'].isin([players[i]]))]
+
+        if i_all_filters['play_id'].count() < threshhold:
+            pass
+        else:
+            netyards = i_all_filters['yards_gained'].sum()
+            rushyards = i_all_filters['rushing_yards'].sum()
+            playcnt = i_all_filters['week'].count()
+            rushes = i_all_filters['rushing_yards'].count()
+            epa_mean = i_all_filters['epa'].mean()
+
+            if pos == ['Qb']:
+                player_name = i_all_filters['passer_player_name'].mode()
+                player_name = str(player_name[0]) if len(player_name)>0 else "Unknown"
+                passyards = i_all_filters['passing_yards'].sum()
+                passes = i_all_filters['air_yards'].count()
+                completions = i_all_filters['passing_yards'].count()
+                if passes != 0:
+                    ypa = (passyards / passes)
+                    comp_perc = (completions / passes)
+                else:
+                    ypa = 0
+                    comp_perc = 0
+                cpoe = i_all_filters['cpoe'].mean()
+                ypcatch = 'na'
+                recyards = 'na'
+                ypt = 'na'
+                trgts = 'na'
+                receptions = 'na'
+
+            elif pos == ['Rb']:
+                player_name = i_all_filters['rusher_player_name'].mode()
+                player_name = str(player_name[0]) if len(player_name)>0 else "Unknown"
+                passyards = 'na'
+                passes = 'na'
+                completions = 'na'
+                ypa = 'na'      
+                recyards = i_all_filters['receiving_yards'].sum()
+                trgts = i_all_filters['air_yards'].count()
+                receptions = i_all_filters['receiving_yards'].count() 
+                if trgts != 0:
+                    ypt = (recyards / trgts)
+                else:
+                    ypt = 0
+                if receptions != 0:
+                    ypcatch = (recyards / receptions)
+                else:
+                    ypcatch = 0
+                comp_perc = 'na'
+                cpoe = 'na'  
+
+            elif pos == ['Wr/Te']:
+                player_name = i_all_filters['receiver_player_name'].mode()
+                player_name = str(player_name[0]) if len(player_name)>0 else "Unknown"
+                passyards = 'na'
+                passes = 'na'
+                completions = 'na'
+                ypa = 'na'      
+                recyards = i_all_filters['receiving_yards'].sum()
+                trgts = i_all_filters['air_yards'].count()
+                receptions = i_all_filters['receiving_yards'].count() 
+                if trgts != 0:
+                    ypt = (recyards / trgts)
+                else:
+                    ypt = 0
+                if receptions != 0:
+                    ypcatch = (recyards / receptions)
+                else:
+                    ypcatch = 0
+                comp_perc = 'na'
+                cpoe = 'na'                    
+
+            ypplay = (netyards / playcnt) if playcnt != 0 else 0
+            
+            p_data = pd.DataFrame({'Player Name': [player_name], 'EPA avg': [epa_mean], 'Net Yards': [netyards], 
+                                   'Pass Yards': [passyards], 'Rush Yards': [rushyards], 
+                                   'Receiving yards': [recyards], 'Pass atmps': [passes], 
+                                   'Rush atmps': [rushes], 'Targets': [trgts], 'Receptions': [receptions], 
+                                   'Yards/Play': [ypplay], 'yards/pass': [ypa], 'yards/rush': [0], 
+                                   'yards/catch': [ypcatch], 'yards/target': [ypt], 'Net EPA': [0], 
+                                   'Success %': [0], 'Comp %': [comp_perc], 'CPOE': [cpoe]})
+            data = pd.concat([data, p_data], ignore_index=True)
+            
+    return data
+
 def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt, redzone_only=False):
     data = pd.DataFrame()
 
