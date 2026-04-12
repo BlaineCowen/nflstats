@@ -217,8 +217,6 @@ stat_columns = [ 'week', 'fantasy', 'posteam', 'posteam_type', 'defteam','yardli
                     	'receiving_yards', 	'rusher_player_name', 	'rushing_yards', 	'season', 	'cp', 	'cpoe', 	'stadium', 	'weather', 	'roof', 	'surface', 	'success', 	'qb_epa', ]
 
 @st.cache_data
-
-@st.cache_data
 def addplayergroup(players, team, pos, week, wp, downs, airyards, togo, scoredelt, threshhold, redzone_only=False):
     data = pd.DataFrame()
     for i in range(len(players)):
@@ -359,7 +357,7 @@ def rawdataget(players, team, pos, week, wp, downs, airyards, togo, scoredelt, r
                 (playerstats['passer_player_id'].isin([selected_player_group[i]]) | \
                 playerstats['rusher_player_id'].isin([selected_player_group[i]]) | playerstats['receiver_player_id'].isin([selected_player_group[i]]))]
 
-        data = data.append(i_all_filters, ignore_index=True)
+        data = pd.concat([data, i_all_filters], ignore_index=True)
 
     return data
 
