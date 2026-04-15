@@ -73,21 +73,17 @@ rusher_list = df_selected_team[(df_selected_team['carries'].gt(7) & (df_selected
 passer_list = df_selected_team[(df_selected_team['completions'].gt(5))]
 
 if selected_pos == ['Rb']:
-    player_list = rusher_list['player_name'].sort_values()
-    player_list = player_list.unique()
+    player_list = rusher_list['player_name'].sort_values().unique()
     
 elif selected_pos == ['Qb']:
-    player_list = passer_list['player_name'].sort_values()
-    player_list = player_list.unique()
+    player_list = passer_list['player_name'].sort_values().unique()
 
 elif selected_pos == ['Wr/Te']:
     receiver_list = df_selected_team[((df_selected_team['receptions'].gt(5)) & (df_selected_team['carries'].lt(3)))]
-    player_list = receiver_list['player_name'].sort_values()
-    player_list = player_list.unique()
+    player_list = receiver_list['player_name'].sort_values().unique()
 
 else:
-    player_list = df_player_list['player_name'].sort_values()
-    player_list = player_list.unique()
+    player_list = df_player_list['player_name'].sort_values().unique()
     receiver_list = df_selected_team[((df_selected_team['receptions'].gt(5)) &
         (df_selected_team['carries'].lt(3)))]
     receiver_list = receiver_list['player_name'].unique()
@@ -192,7 +188,6 @@ togo_yards = list(togo_yards)
 air_yards = st.sidebar.select_slider('Air Yards', options=list(range(0,101)),
  value=[0, 100])
 air_yards = list(air_yards)
-print(type(air_yards))
 
 #Sidebar - Score differential
 score_delta = st.sidebar.select_slider('Score Differential', options=list(range(-50,51)), 
